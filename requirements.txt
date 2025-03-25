@@ -1,0 +1,13 @@
+# CSC111 Winter 2025: Python libraries used in the Stock Correlation Network module
+
+# Data fetching and manipulation
+yfinance>=0.2.33
+pandas>=2.1.4
+
+# Plotting and data visualization
+matplotlib>=3.8.0
+seaborn>=0.13.0
+plotly>=5.22.0
+
+# Network analysis
+networkx>=3.2.1
