@@ -2,139 +2,137 @@
 PearTrader – Stock Correlation Calculator
 =========================
 
-This module allows users to analyze and visualize correlations among a selected list of
-stock tickers. Users can choose a date range and:
-- Visualize the correlation matrix as a heatmap
-- Build a correlation network with edges above a certain threshold
-- Detect communities in the network using greedy modularity
-- Query connected stocks in the same community
-- Query the correlation coefficient between any two stocks
+This module handles the GUI for the application. Users can
+input information into text boxes to use the calculator.
+Results will be updated on the page, open in seperate windows,
+or open in your browser.
 
 Copyright (c) 2025 by [Yuanzhe Li, Luke Pan, Alec Jiang, Junchen Liu]
 All rights reserved.
 """
-from click import command
 
-import CorrelationCalc
 import tkinter as tk
-from tkinter import *
-
-window = tk.Tk()
-window.title("PearTrader")
-window.geometry("1024x450")
+import correlation_calc
 
 
 def submit_date() -> None:
+    """
+    Take input from the date entry fields, and recieve data from Yahoo Finance.
+    Analyze the given data with correlation_calc methods.
+
+    Preconditions:
+        - start_entry is not None and end_entry is not None
+        - start_entry.get() and end_entry.get() are in 'YYYY-MM-DD' format.
+        - start_date < end_date.
+    """
     start_input = start_entry.get()
     end_input = end_entry.get()
     try:
-        start_date = CorrelationCalc.validate_date(start_input).strftime('%Y-%m-%d')
-        end_date = CorrelationCalc.validate_date(end_input).strftime('%Y-%m-%d')
-        CorrelationCalc.analyze_stocks(start_date, end_date)
+        start_date = correlation_calc.validate_date(start_input).strftime('%Y-%m-%d')
+        end_date = correlation_calc.validate_date(end_input).strftime('%Y-%m-%d')
+        correlation_calc.filter_data(start_date, end_date)
+        correlation_calc.analyze_stocks(start_date, end_date)
+        progress_text.config(text="Opening graph in browser", fg="green")
     except ValueError as e:
+        progress_text.config(text="Incorrect date format, should be YYYY-MM-DD", fg="red")
         print(e)
 
 
 def submit_stock_community() -> None:
-    user_stock = community_entry.get().strip().upper()
-    connected = CorrelationCalc.get_connected_stocks_in_community(user_stock)
+    """
+    Take input from the community entry fields, and find all stocks in the same community.
+    Open a new window with all the stocks in the community with their correlation values.
 
-    connected_window = Toplevel(window)
+    Preconditions:
+        - community_entry is not None
+        - community_entry.get() is a valid node in the graph
+    """
+    user_stock = community_entry.get().strip().upper()
+    connected = correlation_calc.get_connected_stocks_in_community(user_stock)
+
+    connected_window = tk.Toplevel(window)
     connected_window.title("Stocks in the same community")
     connected_window.geometry("200x400")
-    connected_scroll = Scrollbar(connected_window)
-    connected_scroll.pack(side=RIGHT, fill=Y)
-    connected_tickers = Text(connected_window, width=5, height=len(connected),
-                             wrap=NONE, yscrollcommand=connected_scroll.set)
+    connected_scroll = tk.Scrollbar(connected_window)
+    connected_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+    connected_tickers = tk.Text(connected_window, width=5, height=len(connected),
+                                wrap=tk.NONE, yscrollcommand=connected_scroll.set)
     if not connected:
-        connected_tickers.insert(END, "No connected tickers")
+        connected_tickers.insert(tk.END, "No connected tickers")
     else:
+        connected_tickers.insert(tk.END, "Ticker  | Correlation\n")
         for ticker in connected:
-            connected_tickers.insert(END, f"{ticker}: "
-                                          f"{CorrelationCalc.get_correlation_between(user_stock, ticker):>8.4f} \n")
+            connected_tickers.insert(tk.END, f"{ticker:<7} | "
+                                     f"{correlation_calc.get_correlation_between(user_stock, ticker):.4f} \n")
 
-    connected_tickers.pack(side=TOP, fill=X)
-    print(f"Connected stocks in the same community as {user_stock}: "
-          f"{connected if connected else 'None or not found'}")
+    connected_tickers.pack(side=tk.TOP, fill=tk.X)
 
 
 def submit_stock_comparison() -> None:
+    """
+    Find and display the correlation value between two inputted stocks.
+
+    Preconditions:
+        - first_comparison_entry is not None and second_comparison_entry is not None
+        - first_comparison_entry.get() and second_comparison_entry.get() are valid nodes in the graph
+    """
     stock1 = first_comparison_entry.get().strip().upper()
     stock2 = second_comparison_entry.get().strip().upper()
-    corr_value = CorrelationCalc.get_correlation_between(stock1, stock2)
+    corr_value = correlation_calc.get_correlation_between(stock1, stock2)
     if corr_value is not None:
-        print(f"Correlation between {stock1} and {stock2}: {corr_value:.4f}")
         correlation_text.config(text=f"Correlation between {stock1} and {stock2}: {corr_value:.4f}")
     else:
-        print("Invalid choice. Please try again.")
         correlation_text.config(text="Invalid choice. Please try again.")
 
 
-start_text = Label(window, text="Enter Start Date")
-start_text.pack()
-
-start_entry = Entry(window)
-start_entry.pack()
-end_entry = Entry(window)
-end_entry.pack()
-
-submit = Button(window, text="submit dates", command=submit_date)
-submit.pack()
-
-community_text = Label(window, text="Enter a stock symbol to see its connected stocks in the same community: ")
-community_text.pack()
-
-community_entry = Entry(window)
-community_entry.pack()
-
-community_button = Button(window, text="Check stock community", command=submit_stock_community)
-community_button.pack()
-
-first_comparison_text = Label(window, text="Enter first stock")
-first_comparison_text.pack()
-first_comparison_entry = Entry(window)
-first_comparison_entry.pack()
-
-second_comparison_text = Label(window, text="Enter second stock")
-second_comparison_text.pack()
-second_comparison_entry = Entry(window)
-second_comparison_entry.pack()
-
-stock_comparison_submit = Button(window, text="Check stock correlation", command=submit_stock_comparison)
-stock_comparison_submit.pack()
-
-correlation_text = Label(window, text="")
-correlation_text.pack()
-
 if __name__ == '__main__':
+    # import python_ta
+    # python_ta.check_all(config={
+    #     'extra-imports': ['correlation_calc', 'tkinter'],  # the names (strs) of imported modules
+    #     'allowed-io': ['submit_date', 'submit_date'],  # the names (strs) of functions that call print/open/input
+    #     'max-line-length': 120
+    # })
+
+    window = tk.Tk()
+    window.title("PearTrader")
+    window.geometry("400x400")
+
+    start_text = tk.Label(window, text="Enter Start and End Dates (YYYY-MM-DD)")
+    start_text.pack()
+
+    start_entry = tk.Entry(window)
+    start_entry.pack()
+    end_entry = tk.Entry(window)
+    end_entry.pack()
+
+    submit = tk.Button(window, text="submit dates", command=submit_date)
+    submit.pack()
+
+    progress_text = tk.Label(window, text="")
+    progress_text.pack()
+
+    community_text = tk.Label(window, text="Enter a stock symbol to see its connected stocks in the same community: ")
+    community_text.pack(pady=(20, 0))
+
+    community_entry = tk.Entry(window)
+    community_entry.pack()
+
+    community_button = tk.Button(window, text="Check stock community", command=submit_stock_community)
+    community_button.pack()
+
+    first_comparison_text = tk.Label(window, text="Enter first stock")
+    first_comparison_text.pack(pady=(20, 0))
+    first_comparison_entry = tk.Entry(window)
+    first_comparison_entry.pack()
+
+    second_comparison_text = tk.Label(window, text="Enter second stock")
+    second_comparison_text.pack()
+    second_comparison_entry = tk.Entry(window)
+    second_comparison_entry.pack()
+
+    stock_comparison_submit = tk.Button(window, text="Check stock correlation", command=submit_stock_comparison)
+    stock_comparison_submit.pack()
+
+    correlation_text = tk.Label(window, text="")
+    correlation_text.pack()
     window.mainloop()
-    # start_input = input("Enter start date (YYYY-MM-DD): ")
-    # end_input = input("Enter end date (YYYY-MM-DD): ")
-    #
-    # try:
-    #     start_date = CorrelationCalc.validate_date(start_input).strftime('%Y-%m-%d')
-    #     end_date = CorrelationCalc.validate_date(end_input).strftime('%Y-%m-%d')
-    #     CorrelationCalc.analyze_stocks(start_date, end_date)
-    #
-    #     while True:
-    #         choice = (input("Choose mode: 1 - connected stocks, 2 - correlation between two stocks, exit - quit: ")
-    #                   .strip().lower())
-    #         if choice == 'exit':
-    #             break
-    #         elif choice == '1':
-    #             user_stock = (input("Enter a stock symbol to see its connected stocks in the same community: ")
-    #                           .strip().upper())
-    #             connected = CorrelationCalc.get_connected_stocks_in_community(user_stock)
-    #             print(f"Connected stocks in the same community as {user_stock}: "
-    #                   f"{connected if connected else 'None or not found'}")
-    #         elif choice == '2':
-    #             stock1 = input("Enter the first stock symbol: ").strip().upper()
-    #             stock2 = input("Enter the second stock symbol: ").strip().upper()
-    #             corr_value = CorrelationCalc.get_correlation_between(stock1, stock2)
-    #             if corr_value is not None:
-    #                 print(f"Correlation between {stock1} and {stock2}: {corr_value:.4f}")
-    #         else:
-    #             print("Invalid choice. Please try again.")
-    #
-    # except ValueError as e:
-    #     print(e)
