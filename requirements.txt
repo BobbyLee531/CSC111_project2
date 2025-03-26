@@ -11,3 +11,6 @@ plotly>=5.22.0
 
 # Network analysis
 networkx>=3.2.1
+
+#PythonTA
+pythonTA~=2.9.1
