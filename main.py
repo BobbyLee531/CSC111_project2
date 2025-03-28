@@ -81,7 +81,6 @@ def submit_stock_community() -> None:
     if not connected:
         connected_tickers.insert(tk.END, "No connected tickers")
     else:
-        connected_tickers.insert(tk.END, "Ticker  | Correlation\n")
         for ticker in connected:
             connected_tickers.insert(tk.END, f"{ticker:<7} | "
                                      f"{correlation_calc.get_correlation_between(user_stock, ticker):.4f} \n")
@@ -126,7 +125,7 @@ if __name__ == '__main__':
     end_entry = tk.Entry(window)
     end_entry.pack()
 
-    threshold_text = tk.Label(window, text="Enter threshold (<0.5, >1, default 0.68):")
+    threshold_text = tk.Label(window, text="Enter threshold (>0.5, <1, default 0.68):")
     threshold_text.pack()
 
     threshold_entry = tk.Entry(window)
