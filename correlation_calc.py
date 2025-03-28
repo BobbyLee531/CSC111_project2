@@ -13,7 +13,6 @@ stock tickers. Users can choose a date range and:
 Copyright (c) 2025 by [Yuanzhe Li, Luke Pan, Alec Jiang, Junchen Liu]
 All rights reserved.
 """
-import doctest
 from datetime import datetime
 
 import yfinance as yf
@@ -29,7 +28,6 @@ import pandas as pd
 G = nx.Graph()
 communities = []
 correlation_matrix = pd.DataFrame()
-threshold = 0.68
 tickers = [
            "AAPL", "AMZN", "GOOGL", "META", "TSLA", "JPM", "WMT", "MA", "PG", "UNH",
            "JNJ", "HD", "XOM", "CVX", "BAC", "PFE", "ABBV", "KO", "PEP", "MRK",
@@ -143,7 +141,7 @@ def filter_data(start_date: str, end_date: str) -> None:
         correlation_matrix = returns.corr()
 
 
-def analyze_stocks(start_date: str, end_date: str) -> None:
+def analyze_stocks(start_date: str, end_date: str, threshold: float | int) -> None:
     """
     Download historical stock data, compute correlations, generate a graph, identify communities,
     and visualize using Plotly.
@@ -151,6 +149,7 @@ def analyze_stocks(start_date: str, end_date: str) -> None:
     Preconditions:
         - start_date and end_date are in 'YYYY-MM-DD' format.
         - start_date < end_date.
+        - isinstance(threshold, (int, float)) is True
 
     Representation Invariants:
         - G is populated with nodes and edges based on correlation threshold.
@@ -240,10 +239,10 @@ def analyze_stocks(start_date: str, end_date: str) -> None:
     fig.show()
 
 
-def get_connected_stocks_in_community(stock: str) -> list:
+def get_connected_stocks_in_community(stock: str, threshold: float | int) -> list:
     """
     Return a list of stocks that are in the same community as `stock` and have
-    a correlation greater than or equal to the global threshold.
+    a correlation greater than or equal to the threshold.
 
     Preconditions:
         - analyze_stocks() must be called before this function.
@@ -252,7 +251,7 @@ def get_connected_stocks_in_community(stock: str) -> list:
     Returns:
         - List of ticker symbols connected to `stock` within its community.
     """
-    global G, communities, correlation_matrix, threshold
+    global G, communities, correlation_matrix
 
     if G is None or communities is None or correlation_matrix is None:
         print("Run analyze_stocks() first to build the network.")
