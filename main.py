@@ -15,23 +15,42 @@ import tkinter as tk
 import correlation_calc
 
 
+def threshold_set() -> float:
+    """
+    Get input threshold value, and filter if threshold is invalid.
+    """
+    threshold_value = threshold_entry.get()
+    try:
+        threshold_value = float(threshold_value)
+        threshold_alert.config(text="", fg="red")
+        if threshold_value < 0.5:
+            threshold_alert.config(text="Threshold too low, set to default", fg="red")
+            threshold_value = 0.68
+    except ValueError:
+        threshold_value = 0.68
+        threshold_alert.config(text="Invalid threshold, set to default", fg="red")
+    return threshold_value
+
+
 def submit_date() -> None:
     """
-    Take input from the date entry fields, and recieve data from Yahoo Finance.
+    Take input from the date and threshold entry fields, and recieve data from Yahoo Finance.
     Analyze the given data with correlation_calc methods.
 
     Preconditions:
         - start_entry is not None and end_entry is not None
         - start_entry.get() and end_entry.get() are in 'YYYY-MM-DD' format.
+        - threshold_entry.get() >= 0
         - start_date < end_date.
     """
     start_input = start_entry.get()
     end_input = end_entry.get()
+    threshold_value = threshold_set()
     try:
         start_date = correlation_calc.validate_date(start_input).strftime('%Y-%m-%d')
         end_date = correlation_calc.validate_date(end_input).strftime('%Y-%m-%d')
         correlation_calc.filter_data(start_date, end_date)
-        correlation_calc.analyze_stocks(start_date, end_date)
+        correlation_calc.analyze_stocks(start_date, end_date, threshold_value)
         progress_text.config(text="Opening graph in browser", fg="green")
     except ValueError as e:
         progress_text.config(text="Incorrect date format, should be YYYY-MM-DD", fg="red")
@@ -48,7 +67,9 @@ def submit_stock_community() -> None:
         - community_entry.get() is a valid node in the graph
     """
     user_stock = community_entry.get().strip().upper()
-    connected = correlation_calc.get_connected_stocks_in_community(user_stock)
+    threshold_value = threshold_set()
+
+    connected = correlation_calc.get_connected_stocks_in_community(user_stock, threshold_value)
 
     connected_window = tk.Toplevel(window)
     connected_window.title("Stocks in the same community")
@@ -104,6 +125,15 @@ if __name__ == '__main__':
     start_entry.pack()
     end_entry = tk.Entry(window)
     end_entry.pack()
+
+    threshold_text = tk.Label(window, text="Enter threshold (<0.5, >1, default 0.68):")
+    threshold_text.pack()
+
+    threshold_entry = tk.Entry(window)
+    threshold_entry.pack()
+
+    threshold_alert = tk.Label(window, text="")
+    threshold_alert.pack()
 
     submit = tk.Button(window, text="submit dates", command=submit_date)
     submit.pack()
